@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Search</title>
+
+<style>
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+    margin: 0;
+}
+
+#grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2px;
+    width: 95vw;
+    max-width: 500px;
+    margin: 20px auto;
+    user-select: none;
+    touch-action: none; /* prevents scroll while swiping */
+}
+
+.cell {
+    aspect-ratio: 1 / 1;
+    background: #eee;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 5vw;
+    max-font-size: 22px;
+    cursor: pointer;
+}
+
+.cell.selected {
+    background: #87CEFA;
+}
+
+.cell.found {
+    background: #4CAF50;
+    color: white;
+}
+
+#words span {
+    margin: 10px;
+    display: inline-block;
+}
+
+#words .found-word {
+    color: green;
+    font-weight: bold;
+}
+
+#victory {
+    opacity: 0;
+    transition: opacity 1.5s ease;
+}
+
+#victory.fade-in {
+    opacity: 1;
+}
+
+.confetti {
+    position: fixed;
+    top: -10px;
+    width: 8px;
+    height: 8px;
+    animation: fall linear forwards;
+}
+
+@keyframes fall {
+    to {
+        transform: translateY(100vh) rotate(720deg);
+        opacity: 0;
+    }
+}
+</style>
+</head>
+<body>
+
+<h2>Word Search</h2>
+
+<div id="words"></div>
+<div id="grid"></div>
+
+<div id="victory" style="display:none; margin-top:20px;">
+    <div style="font-size:60px;">⭐</div>
+    <h3>You found all the words!</h3>
+</div>
+
+<script>
+const words = ["BANANA", "DOG", "FISH", "CHAIR", "SEED"];
+
+const gridData = [
+    "D O S E E D",
+    "O B C H O C",
+    "G H O L J H",
+    "B A N A N A",
+    "F I S H T I",
+    "B Q A R T R"
+];
+
+const grid = document.getElementById("grid");
+const wordsDiv = document.getElementById("words");
+const victoryDiv = document.getElementById("victory");
+
+let isDragging = false;
+let selectedCells = [];
+let foundWords = new Set();
+let gameWon = false;
+
+// Render word list
+words.forEach(word => {
+    const span = document.createElement("span");
+    span.textContent = word;
+    span.id = "word-" + word;
+    wordsDiv.appendChild(span);
+});
+
+// Build grid
+gridData.forEach((row, r) => {
+    const letters = row.split(" ");
+    letters.forEach((letter, c) => {
+        const cell = document.createElement("div");
+        cell.classList.add("cell");
+        cell.textContent = letter;
+        cell.dataset.row = r;
+        cell.dataset.col = c;
+        grid.appendChild(cell);
+    });
+});
+
+const cells = document.querySelectorAll(".cell");
+
+function getWordFromSelection() {
+    return selectedCells.map(cell => cell.textContent).join("");
+}
+
+function isStraightLine() {
+    if (selectedCells.length < 2) return true;
+
+    const rows = selectedCells.map(c => parseInt(c.dataset.row));
+    const cols = selectedCells.map(c => parseInt(c.dataset.col));
+
+    const rowDiff = rows[1] - rows[0];
+    const colDiff = cols[1] - cols[0];
+
+    for (let i = 1; i < rows.length; i++) {
+        if (rows[i] - rows[i-1] !== rowDiff ||
+            cols[i] - cols[i-1] !== colDiff) {
+            return false;
+        }
+    }
+    return true;
+}
+
+function clearSelection() {
+    selectedCells.forEach(cell => {
+        if (!cell.classList.contains("found"))
+            cell.classList.remove("selected");
+    });
+    selectedCells = [];
+}
+
+function triggerVictory() {
+    if (gameWon) return;
+    gameWon = true;
+
+    victoryDiv.style.display = "block";
+    victoryDiv.classList.add("fade-in");
+
+    launchConfetti();
+}
+
+function launchConfetti() {
+    for (let i = 0; i < 100; i++) {
+        const confetti = document.createElement("div");
+        confetti.className = "confetti";
+        confetti.style.left = Math.random() * window.innerWidth + "px";
+        confetti.style.backgroundColor =
+            `hsl(${Math.random()*360}, 100%, 50%)`;
+        confetti.style.animationDuration =
+            (Math.random() * 2 + 2) + "s";
+        document.body.appendChild(confetti);
+
+        setTimeout(() => confetti.remove(), 4000);
+    }
+}
+
+// START selection
+cells.forEach(cell => {
+    cell.addEventListener("pointerdown", (e) => {
+        if (gameWon) return;
+
+        isDragging = true;
+        clearSelection();
+
+        selectedCells.push(cell);
+        cell.classList.add("selected");
+
+        cell.setPointerCapture(e.pointerId);
+    });
+
+    cell.addEventListener("pointerup", () => {
+        if (gameWon) return;
+
+        isDragging = false;
+
+        const word = getWordFromSelection();
+        const reversed = word.split("").reverse().join("");
+
+        if (words.includes(word) || words.includes(reversed)) {
+            selectedCells.forEach(c => {
+                c.classList.remove("selected");
+                c.classList.add("found");
+            });
+
+            const found = words.includes(word) ? word : reversed;
+
+            document.getElementById("word-" + found)
+                .classList.add("found-word");
+
+            foundWords.add(found);
+
+            if (foundWords.size === words.length) {
+                triggerVictory();
+            }
+        }
+
+        clearSelection();
+    });
+});
+
+// IMPROVED mobile + desktop drag tracking
+document.addEventListener("pointermove", (e) => {
+    if (!isDragging || gameWon) return;
+
+    const element = document.elementFromPoint(e.clientX, e.clientY);
+
+    if (!element || !element.classList.contains("cell")) return;
+    if (selectedCells.includes(element)) return;
+
+    selectedCells.push(element);
+
+    if (!isStraightLine()) {
+        selectedCells.pop();
+        return;
+    }
+
+    element.classList.add("selected");
+});
+
+document.addEventListener("pointerup", () => {
+    isDragging = false;
+});
+</script>
+
+</body>
+</html>
