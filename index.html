@@ -2,31 +2,36 @@
 <html>
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Word Search</title>
+
 <style>
 body {
     font-family: Arial, sans-serif;
     text-align: center;
+    margin: 0;
 }
 
 #grid {
     display: grid;
-    grid-template-columns: repeat(6, 40px);
-    gap: 4px;
-    justify-content: center;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 2px;
+    width: 95vw;
+    max-width: 500px;
     margin: 20px auto;
     user-select: none;
+    touch-action: none; /* prevents scroll while swiping */
 }
 
 .cell {
-    width: 40px;
-    height: 40px;
+    aspect-ratio: 1 / 1;
     background: #eee;
     display: flex;
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 18px;
+    font-size: 5vw;
+    max-font-size: 22px;
     cursor: pointer;
 }
 
@@ -48,6 +53,7 @@ body {
     color: green;
     font-weight: bold;
 }
+
 #victory {
     opacity: 0;
     transition: opacity 1.5s ease;
@@ -79,6 +85,7 @@ body {
 
 <div id="words"></div>
 <div id="grid"></div>
+
 <div id="victory" style="display:none; margin-top:20px;">
     <div style="font-size:60px;">⭐</div>
     <h3>You found all the words!</h3>
@@ -183,27 +190,18 @@ function launchConfetti() {
     }
 }
 
+// START selection
 cells.forEach(cell => {
-    cell.addEventListener("pointerdown", () => {
+    cell.addEventListener("pointerdown", (e) => {
         if (gameWon) return;
+
         isDragging = true;
         clearSelection();
-        selectedCells.push(cell);
-        cell.classList.add("selected");
-    });
-
-    cell.addEventListener("pointerenter", () => {
-        if (!isDragging || gameWon) return;
-        if (selectedCells.includes(cell)) return;
 
         selectedCells.push(cell);
-
-        if (!isStraightLine()) {
-            selectedCells.pop();
-            return;
-        }
-
         cell.classList.add("selected");
+
+        cell.setPointerCapture(e.pointerId);
     });
 
     cell.addEventListener("pointerup", () => {
@@ -236,9 +234,27 @@ cells.forEach(cell => {
     });
 });
 
+// IMPROVED mobile + desktop drag tracking
+document.addEventListener("pointermove", (e) => {
+    if (!isDragging || gameWon) return;
+
+    const element = document.elementFromPoint(e.clientX, e.clientY);
+
+    if (!element || !element.classList.contains("cell")) return;
+    if (selectedCells.includes(element)) return;
+
+    selectedCells.push(element);
+
+    if (!isStraightLine()) {
+        selectedCells.pop();
+        return;
+    }
+
+    element.classList.add("selected");
+});
+
 document.addEventListener("pointerup", () => {
     isDragging = false;
-    clearSelection();
 });
 </script>
 
