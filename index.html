@@ -16,12 +16,22 @@ h2 {
     margin-top: 10px;
 }
 
+#difficulty {
+    margin-top: 10px;
+}
+
+#difficulty button {
+    padding: 8px 14px;
+    margin: 4px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
 #grid {
     display: grid;
-    grid-template-columns: repeat(6, 1fr);
     gap: 2px;
-    width: 95vw;
-    max-width: 500px;
+    width: 100%;
+    max-width: 600px;
     margin: 20px auto;
     user-select: none;
     touch-action: none;
@@ -34,7 +44,7 @@ h2 {
     align-items: center;
     justify-content: center;
     font-weight: bold;
-    font-size: 5vw;
+    font-size: clamp(16px, 4vw, 28px);
     cursor: pointer;
 }
 
@@ -79,6 +89,14 @@ h2 {
 <body>
 
 <h2>Word Search</h2>
+
+<div id="difficulty">
+    <strong>Select Difficulty:</strong><br>
+    <button onclick="setDifficulty(6)">Easy (6x6)</button>
+    <button onclick="setDifficulty(8)">Medium (8x8)</button>
+    <button onclick="setDifficulty(10)">Hard (10x10)</button>
+</div>
+
 <div id="words"></div>
 <div id="grid"></div>
 
@@ -88,14 +106,96 @@ h2 {
 </div>
 
 <script>
+
+// ------------------ WORD LIST ------------------
+
 const WORD_POOL = [
+
+/* ================= 4 LETTER WORDS ================= */
+
 "FISH","TREE","MOON","STAR","WIND","FROG","LION","BEAR",
 "ROCK","SAND","SHIP","FARM","FIRE","WOLF","RAIN","SNOW",
-"BLUE","PINK","GOLD","SILK","MATH","BOOK","BIRD","ROAD"
+"BLUE","PINK","GOLD","SILK","MATH","BOOK","BIRD","ROAD",
+"WOOD","IRON","CLAY","WAVE","FOAM","LEAF","ROOT","SEED",
+"MINT","SALT","SAGE","RICE","CORN","OATS","PEAR","PLUM",
+"LAMP","DOOR","WALL","ROOF","FORK","RING","BELL","COIN",
+"DEER","HAWK","DOVE","LAMB","GOAT","CRAB","SWAN","TOAD",
+"AXIS","ATOM","BOND","CELL","DATA","NODE","UNIT","ZERO",
+"HEAT","COLD","WARM","COOL","DUSK","DAWN","NOON","PATH",
+"HILL","LAKE","CAVE","POND","REEF","MOSS","BARK","VINE",
+
+"ARCH","BARN","BOLT","BRIM","BULB","CAGE","CAMP","CARD",
+"CART","CAVE","CLUB","COAL","COAT","CUBE","DIAL","DOCK",
+"DUST","ECHO","EDGE","ELSE","FACE","FLAG","FLEA","FUEL",
+"GATE","GEAR","GIFT","GLUE","GRIP","HARP","HATE","HORN",
+"JUMP","KITE","LACE","LOFT","LOOP","MILL","NAIL","NEST",
+"PACK","PARK","PINE","PIPE","PORT","RACE","RAIL","RAMP",
+"ROPE","RUST","SAIL","SHOP","SINK","SOAP","SOIL","SPIN",
+"TIDE","TILE","TOOL","TOWN","TRIP","VAIN","WASH","YARD",
+
+/* ================= 5 LETTER WORDS ================= */
+
+"APPLE","GRAPE","PLANT","BRICK","CLOUD","RIVER","STONE","LIGHT",
+"CHAIR","TABLE","PLANE","TRAIN","SHEEP","HORSE","SNAKE","ZEBRA",
+"SWEET","SMILE","LAUGH","BRAVE","SHINE","DREAM","HEART","SOUND",
+"GREEN","BROWN","WHITE","BLACK","ROUND","SWORD","FLAME","FROST",
+"STORM","BLADE","GRASS","THORN","BERRY","MANGO","PEACH","LEMON",
+"OLIVE","BREAD","SUGAR","HONEY","SPICE","CREAM","CROWN","SHINE",
+"SHARE","SMOKE","STEAM","METAL","SOLID","POWER","FORCE","SPEED",
+"LEVEL","SCALE","SHAPE","COLOR","DEPTH","WIDTH","VALUE","PRICE",
+"BRUSH","PAINT","FRAME","MUSIC","VOICE","DANCE","DRAMA","MAGIC",
+"FAITH","LUCKY","FAIRY","ANGEL","GIANT","DWARF","ELDER","YOUTH",
+
+"ADULT","ALIVE","AMBER","BASIC","BEACH","BLINK","BOOST","BOUND",
+"BRAIN","BRING","BUILD","CARRY","CATCH","CAUSE","CHAIN","CHARM",
+"CHESS","CHEST","CHIEF","CHILL","CHOIR","CIVIC","CLEAN","CLEAR",
+"CLIMB","CLOCK","CLOSE","COACH","COAST","COUNT","COURT","COVER",
+"CRAFT","CRANE","CRASH","CROSS","CYCLE","DAILY","DELAY","DOUBT",
+"DRAFT","DRINK","DRIVE","EARTH","ENJOY","ENTER","EQUAL","ERROR",
+"EVENT","EXACT","EXTRA","FIELD","FINAL","FOCUS","FORTH","FRESH",
+"FRONT","FRUIT","GLASS","GRACE","GRADE","GRANT","GREAT","GROUP",
+"HAPPY","HOUSE","HUMAN","IDEAL","IMAGE","INDEX","INNER","ISSUE",
+
+/* ================= 6 LETTER WORDS ================= */
+
+"FOREST","OCEAN","DESERT","ISLAND","CANDLE","BUTTON","POCKET",
+"SILVER","GOLDEN","COPPER","BRIDGE","CASTLE","MARKET","PLANET",
+"GALAXY","ROCKET","ENGINE","PILLOW","STREAM","FLOWER","SHADOW",
+"SPIRIT","ENERGY","POETRY","MELODY","RHYTHM","PUZZLE","SCRIPT",
+"ORANGE","PURPLE","YELLOW","COFFEE","COOKIE","BUTTER","CHEESE",
+"SALMON","TURTLE","MONKEY","DONKEY","RABBIT","PARROT",
+"DRAGON","WIZARD","KNIGHT","PRINCE","QUEENS","THRONE",
+"ANCHOR","BEACON","BREEZE","CANYON","CLIFFS","CORNER","CRYSTL",
+"FALCON","GLACIE","HARBOR","JUNGLE","LAGOON","MEADOW",
+"NEBULA","OASIS","PEBBLE","QUARTZ","RAVINE","SUMMIT",
+"TUNNEL","VALLEY","WONDER","ZENITH","ADMIRE","CREATE",
+"DESIGN","EXPAND","FABRIC","GATHER","HANDLE","IMPACT",
+"KINDLE","LEGEND","MARBLE","NATION","OBJECT","PHRASE",
+"QUESTS","RANDOM","SILENT","TALENT","UNIQUE","VISION",
+
+"WEALTH","ZEALOT","ABSORB","ACCEPT","ACCESS","ACROSS","ACTION",
+"ACTIVE","ADVICE","AFRAID","AGREED","ALMOST","ALWAYS","AMOUNT",
+"ANIMAL","ANSWER","ANYONE","APPEAR","AROUND","ARRIVE","ARTIST",
+"ASPECT","ATTACK","AUTHOR","AUTUMN","BACKUP","BATTLE","BEAUTY",
+"BECOME","BEFORE","BEGINS","BEHALF","BEHAVE","BEHIND","BELIEF",
+"BELONG","BETTER","BORDER","BRANCH","BREATH","BRIGHT","BROKEN",
+"BUDGET","BURDEN","CAMERA","CANCER","CARBON","CAREER","CASTLE",
+"CELEST","CENTER","CHANCE","CHANGE","CHARGE","CHOICE","CHURCH",
+"CIRCLE","CLIENT","CLOSED","COFFIN","COLUMN","COMBAT","COMING",
+"COMMON","CORNER","CREATE","CREDIT","CRISIS","CUSTOM","DAMAGE",
+"DANGER","DEALER","DEBATE","DECADE","DEFEND","DEGREE","DEMAND",
+"DEPEND","DESIRE","DETAIL","DEVICE","DIFFER","DINNER","DIRECT",
+"DOCTOR","DOUBLE","DRIVER","DURING","EASILY","EFFECT","EFFORT",
+"EITHER","EMPIRE","EMPLOY","ENABLE","ENDING","ENERGY","ENGAGE"
+
 ];
 
-const GRID_SIZE = 6;
-const WORD_COUNT = 5;
+// --------------------------------------------------------
+
+// --------------------------------------------------------
+
+let GRID_SIZE = 6;
+let WORD_COUNT = 5;
 
 let words = [];
 let foundWords = new Set();
@@ -107,12 +207,35 @@ const grid = document.getElementById("grid");
 const wordsDiv = document.getElementById("words");
 const victoryDiv = document.getElementById("victory");
 
+function setDifficulty(size){
+    GRID_SIZE = size;
+
+    if(size === 6) WORD_COUNT = 5;
+    if(size === 8) WORD_COUNT = 8;
+    if(size === 10) WORD_COUNT = 12;
+
+    generatePuzzle();
+}
+
 function randomLetter() {
     return String.fromCharCode(65 + Math.floor(Math.random() * 26));
 }
 
 function pickRandomWords() {
-    const shuffled = [...WORD_POOL].sort(() => 0.5 - Math.random());
+
+    let allowed;
+
+    if (GRID_SIZE === 6) {
+        allowed = WORD_POOL.filter(w => w.length === 4);
+    } 
+    else if (GRID_SIZE === 8) {
+        allowed = WORD_POOL.filter(w => w.length === 4 || w.length === 5);
+    } 
+    else {
+        allowed = WORD_POOL; // Hard uses full pool
+    }
+
+    const shuffled = [...allowed].sort(() => 0.5 - Math.random());
     return shuffled.slice(0, WORD_COUNT);
 }
 
@@ -122,11 +245,11 @@ function createEmptyGrid() {
     );
 }
 
-function placeWord(grid, word) {
+function placeWord(gridData, word) {
     let placed = false;
     let attempts = 0;
 
-    while (!placed && attempts < 100) {
+    while (!placed && attempts < 200) {
         attempts++;
         const direction = Math.random() < 0.5 ? "H" : "V";
         const row = Math.floor(Math.random() * GRID_SIZE);
@@ -136,42 +259,44 @@ function placeWord(grid, word) {
             if (col + word.length > GRID_SIZE) continue;
             let fits = true;
             for (let i = 0; i < word.length; i++) {
-                if (grid[row][col+i] && grid[row][col+i] !== word[i]) {
+                if (gridData[row][col+i] && gridData[row][col+i] !== word[i]) {
                     fits = false; break;
                 }
             }
             if (!fits) continue;
             for (let i = 0; i < word.length; i++) {
-                grid[row][col+i] = word[i];
+                gridData[row][col+i] = word[i];
             }
             placed = true;
         } else {
             if (row + word.length > GRID_SIZE) continue;
             let fits = true;
             for (let i = 0; i < word.length; i++) {
-                if (grid[row+i][col] && grid[row+i][col] !== word[i]) {
+                if (gridData[row+i][col] && gridData[row+i][col] !== word[i]) {
                     fits = false; break;
                 }
             }
             if (!fits) continue;
             for (let i = 0; i < word.length; i++) {
-                grid[row+i][col] = word[i];
+                gridData[row+i][col] = word[i];
             }
             placed = true;
         }
     }
 }
 
-function fillEmpty(grid) {
+function fillEmpty(gridData) {
     for (let r=0;r<GRID_SIZE;r++){
         for (let c=0;c<GRID_SIZE;c++){
-            if (!grid[r][c]) grid[r][c] = randomLetter();
+            if (!gridData[r][c]) gridData[r][c] = randomLetter();
         }
     }
 }
 
 function renderGrid(gridData) {
     grid.innerHTML = "";
+    grid.style.gridTemplateColumns = `repeat(${GRID_SIZE}, 1fr)`;
+
     gridData.forEach((row, r) => {
         row.forEach((letter, c) => {
             const cell = document.createElement("div");
@@ -296,7 +421,6 @@ function triggerVictory() {
     victoryDiv.style.display="block";
     victoryDiv.classList.add("fade-in");
     launchConfetti();
-    setTimeout(generatePuzzle, 3000);
 }
 
 function launchConfetti(){
@@ -311,7 +435,9 @@ function launchConfetti(){
     }
 }
 
-generatePuzzle();
+// Start with easy
+setDifficulty(6);
+
 </script>
 
 </body>
